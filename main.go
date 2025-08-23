@@ -45,10 +45,15 @@ func init() {
 			callback:    commandExit,
 		},
 		"map": {
-			name: "map",
+			name:        "map",
 			description: "Explore the map of the pokemon world",
-			callback: commandMap,
-		}
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Explore the map of pokemod world {previous}",
+			callback:    commandMapB,
+		},
 	}
 }
 
