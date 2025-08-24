@@ -13,7 +13,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func([]string) error
 }
 
 var CmdList map[string]cliCommand
@@ -29,7 +29,7 @@ func main() {
 		input := cleanInput(text)
 		if len(input) > 0 {
 			if cmd, exists := CmdList[input[0]]; exists {
-				if err := cmd.callback(); err != nil {
+				if err := cmd.callback(input[1:]); err != nil {
 					fmt.Println("Command failed:", err)
 				}
 			} else {
@@ -41,7 +41,7 @@ func main() {
 }
 
 func init() {
-	APICache = pokecache.NewCache(10 * time.Second)
+	APICache = pokecache.NewCache(10 * time.Minute)
 	CmdList = map[string]cliCommand{
 		"help": {
 			name:        "help",
@@ -62,6 +62,11 @@ func init() {
 			name:        "mapb",
 			description: "Explore the map of pokemod world {previous}",
 			callback:    commandMapB,
+		},
+		"explore": {
+			name:        "explore",
+			description: "See Pokemon in an area",
+			callback:    commandExplore,
 		},
 	}
 }

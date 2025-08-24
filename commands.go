@@ -20,10 +20,84 @@ type mapName struct {
 	URL  string `json:"url"`
 }
 
+type Pokemon struct {
+	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	ID             int    `json:"id"`
+	Name           string `json:"name"`
+	Weight         int    `json:"weight"`
+	Stats          []struct {
+		BaseStat int `json:"base_stat"`
+		Effort   int `json:"effort"`
+		Stat     struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"stat"`
+	} `json:"stats"`
+	Types []struct {
+		Slot int `json:"slot"`
+		Type struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"type"`
+	} `json:"types"`
+}
+
+type LocationAreaDetail struct {
+	PokemonEncounters []struct {
+		Pokemon struct {
+			Name string `json:"name"`
+			URL  string `json:"url"`
+		} `json:"pokemon"`
+	} `json:"pokemon_encounters"`
+}
+
 var Maps mapsList
+var locationDetail LocationAreaDetail
 
-func commandMap() error {
+func commandExplore(args []string) error {
 
+	url := "https://pokeapi.co/api/v2/location-area/" + args[0]
+	data, exists := APICache.Get(url)
+	if exists {
+		err := json.Unmarshal(data, &locationDetail)
+		if err != nil {
+			return fmt.Errorf("error unmarshaling json for location detail: %w", err)
+		}
+
+		err = printPokemonInLocation()
+		if err != nil {
+			return err
+		}
+	}
+
+	res, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("api error getting pokemon: %w", err)
+	}
+	defer res.Body.Close()
+	if res.StatusCode > 299 {
+		return fmt.Errorf("status Code error: %d", res.StatusCode)
+	}
+	//add to data to cache
+	data, err = io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("error reading body %w", err)
+	}
+	APICache.Add(url, data)
+	err = json.Unmarshal(data, &locationDetail)
+	if err != nil {
+		return fmt.Errorf("error unmarshaling json for location detail: %w", err)
+	}
+
+	err = printPokemonInLocation()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func commandMap(_ []string) error {
 	url := "https://pokeapi.co/api/v2/location-area?offset=0&limit=20"
 
 	if Maps.Next != "" {
@@ -68,8 +142,7 @@ func commandMap() error {
 	return nil
 }
 
-func commandMapB() error {
-
+func commandMapB(_ []string) error {
 	if Maps.Previous == "" {
 		return fmt.Errorf("there is no previous page")
 	}
@@ -124,7 +197,18 @@ func printMaps() error {
 	return nil
 }
 
-func commandHelp() error {
+func printPokemonInLocation() error {
+	if len(locationDetail.PokemonEncounters) == 0 {
+		return fmt.Errorf("no pokemon found in this location")
+	}
+	fmt.Println("Found Pokemon:")
+	for _, encounter := range locationDetail.PokemonEncounters {
+		fmt.Printf(" - %s\n", encounter.Pokemon.Name)
+	}
+	return nil
+}
+
+func commandHelp(_ []string) error {
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
 	fmt.Println("")
@@ -135,7 +219,7 @@ func commandHelp() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(_ []string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
