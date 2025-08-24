@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	pokecache "github.com/raainshe/pokedexcli/internal"
 )
 
 type cliCommand struct {
@@ -14,18 +17,23 @@ type cliCommand struct {
 }
 
 var CmdList map[string]cliCommand
+var APICache *pokecache.Cache
 
 func main() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Print("Pokedex >")
+		fmt.Print("Pokedex > ")
 		scanner.Scan()
 		text := scanner.Text()
 		input := cleanInput(text)
 		if len(input) > 0 {
-			if CmdList[input[0]].callback() != nil {
-				fmt.Println("Invalid command")
+			if cmd, exists := CmdList[input[0]]; exists {
+				if err := cmd.callback(); err != nil {
+					fmt.Println("Command failed:", err)
+				}
+			} else {
+				fmt.Println("Unknown command")
 			}
 		}
 	}
@@ -33,6 +41,7 @@ func main() {
 }
 
 func init() {
+	APICache = pokecache.NewCache(10 * time.Second)
 	CmdList = map[string]cliCommand{
 		"help": {
 			name:        "help",
