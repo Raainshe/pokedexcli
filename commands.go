@@ -164,6 +164,7 @@ func commandCatch(args []string) error {
 			return fmt.Errorf("error unmarshalling cache data: %w", err)
 		}
 		//try to catch pokemon and add it
+		poke.populateStats()
 		poke.tryCatch()
 	}
 	//doesnt exist call api
@@ -185,6 +186,7 @@ func commandCatch(args []string) error {
 	if err != nil {
 		return fmt.Errorf("error unmarshaling pokemon data: %w", err)
 	}
+	poke.populateStats()
 	poke.tryCatch()
 	return nil
 }
