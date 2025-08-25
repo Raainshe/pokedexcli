@@ -42,6 +42,7 @@ func main() {
 
 func init() {
 	APICache = pokecache.NewCache(10 * time.Minute)
+	Pokedex = make(map[string]Pokemon)
 	CmdList = map[string]cliCommand{
 		"help": {
 			name:        "help",
@@ -67,6 +68,11 @@ func init() {
 			name:        "explore",
 			description: "See Pokemon in an area",
 			callback:    commandExplore,
+		},
+		"catch": {
+			name:        "catch",
+			description: "Try to catch a Pokemon",
+			callback:    commandCatch,
 		},
 	}
 }
