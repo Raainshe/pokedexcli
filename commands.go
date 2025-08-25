@@ -64,6 +64,16 @@ var Maps mapsList
 var locationDetail LocationAreaDetail
 var Pokedex map[string]Pokemon
 
+func commandPokedex(_ []string) error {
+	if len(Pokedex) == 0 {
+		return fmt.Errorf("you have no pokemon. catch pokemond using 'catch <pokemon>'")
+	}
+	for name, _ := range Pokedex {
+		fmt.Printf(" - %s\n", name)
+	}
+	return nil
+}
+
 func commandInspect(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("inspect requires a pokemon name")
