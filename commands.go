@@ -27,21 +27,28 @@ type Pokemon struct {
 	ID             int    `json:"id"`
 	Name           string `json:"name"`
 	Weight         int    `json:"weight"`
-	Stats          []struct {
+	Stats          PokemonStats
+	Types          []string
+	RawStats       []struct {
 		BaseStat int `json:"base_stat"`
-		Effort   int `json:"effort"`
 		Stat     struct {
 			Name string `json:"name"`
-			URL  string `json:"url"`
 		} `json:"stat"`
 	} `json:"stats"`
-	Types []struct {
-		Slot int `json:"slot"`
+	RawTypes []struct {
 		Type struct {
 			Name string `json:"name"`
-			URL  string `json:"url"`
 		} `json:"type"`
 	} `json:"types"`
+}
+
+type PokemonStats struct {
+	HP             int
+	Attack         int
+	Defense        int
+	SpecialAttack  int
+	SpecialDefense int
+	Speed          int
 }
 
 type LocationAreaDetail struct {
@@ -57,7 +64,58 @@ var Maps mapsList
 var locationDetail LocationAreaDetail
 var Pokedex map[string]Pokemon
 
-func (p *Pokemon) tryCatch(url string) error {
+func commandInspect(args []string) error {
+	if len(args) == 0 {
+		return fmt.Errorf("inspect requires a pokemon name")
+	}
+
+	if poke, exists := Pokedex[args[0]]; exists {
+		fmt.Printf("Name: %s\n", poke.Name)
+		fmt.Printf("Height: %d\n", poke.Height)
+		fmt.Printf("Weight: %d\n", poke.Weight)
+		fmt.Println("Stats:")
+		fmt.Printf("  -hp: %d\n", poke.Stats.HP)
+		fmt.Printf("  -attack: %d\n", poke.Stats.Attack)
+		fmt.Printf("  -defense: %d\n", poke.Stats.Defense)
+		fmt.Printf("  -special-attack: %d\n", poke.Stats.SpecialAttack)
+		fmt.Printf("  -special-defense: %d\n", poke.Stats.SpecialDefense)
+		fmt.Printf("  -speed: %d\n", poke.Stats.Speed)
+		fmt.Println("Types:")
+		for _, t := range poke.Types {
+			fmt.Printf("  - %s\n", t)
+		}
+		return nil
+	} else {
+		return fmt.Errorf("you have not caught that pokemon")
+	}
+}
+
+func (p *Pokemon) populateStats() {
+	// Convert stats to clean format
+	for _, stat := range p.RawStats {
+		switch stat.Stat.Name {
+		case "hp":
+			p.Stats.HP = stat.BaseStat
+		case "attack":
+			p.Stats.Attack = stat.BaseStat
+		case "defense":
+			p.Stats.Defense = stat.BaseStat
+		case "special-attack":
+			p.Stats.SpecialAttack = stat.BaseStat
+		case "special-defense":
+			p.Stats.SpecialDefense = stat.BaseStat
+		case "speed":
+			p.Stats.Speed = stat.BaseStat
+		}
+	}
+
+	// Convert types to clean format
+	for _, t := range p.RawTypes {
+		p.Types = append(p.Types, t.Type.Name)
+	}
+}
+
+func (p *Pokemon) tryCatch() error {
 	fmt.Printf("Throwing a Pokeball at %s...\n", p.Name)
 	var catchChance int
 
@@ -76,7 +134,7 @@ func (p *Pokemon) tryCatch(url string) error {
 
 	if randomRoll <= catchChance {
 		fmt.Printf("%s was caught!\n", p.Name)
-		Pokedex[url] = *p
+		Pokedex[p.Name] = *p
 		return nil
 	} else {
 		fmt.Printf("%s escaped!\n", p.Name)
@@ -96,7 +154,7 @@ func commandCatch(args []string) error {
 			return fmt.Errorf("error unmarshalling cache data: %w", err)
 		}
 		//try to catch pokemon and add it
-		poke.tryCatch(url)
+		poke.tryCatch()
 	}
 	//doesnt exist call api
 	res, err := http.Get(url)
@@ -117,7 +175,7 @@ func commandCatch(args []string) error {
 	if err != nil {
 		return fmt.Errorf("error unmarshaling pokemon data: %w", err)
 	}
-	poke.tryCatch(url)
+	poke.tryCatch()
 	return nil
 }
 
